@@ -1,0 +1,74 @@
+---
+- name: Deploy Strimzi Kafka Operator using Helm
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ansible_python_interpreter: "{{ lookup('env', 'VIRTUAL_ENV') }}/bin/python"
+  vars_files:
+    - kafka_main_vars.yaml
+    - kafka_operator_vars.yaml
+
+  tasks:
+    - name: Add Strimzi Helm repository
+      kubernetes.core.helm_repository:
+        name: "{{ strimzi_helm_repo }}"
+        repo_url: "{{ strimzi_helm_repo_url }}"
+
+    - name: Update Helm repositories
+      kubernetes.core.helm_repository:
+        name: "{{ strimzi_helm_repo }}"
+        repo_url: "{{ strimzi_helm_repo_url }}"
+        state: present
+        
+
+    - name: Fetch default values for Strimzi Helm chart
+      ansible.builtin.command:
+        argv:
+          - helm
+          - show
+          - values
+          - "{{ strimzi_helm_repo }}/{{ strimzi_helm_chart }}"
+          - --version
+          - "{{ strimzi_helm_chart_version }}"
+      register: helm_values_output
+      changed_when: false
+
+
+    - name: Save Helm values to file
+      ansible.builtin.copy:
+        dest: "kafka_operator_values_{{ strimzi_helm_chart_version }}.yaml"
+        content: "{{ helm_values_output.stdout }}"
+        mode: '0644'
+      when: helm_values_output.stdout is defined
+
+    - name: Ensure {{ kafka_namespace }} namespace exists
+      kubernetes.core.k8s:
+        name: "{{ kafka_namespace }}"
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Setup CA key and certificate
+      script: "{{ playbook_dir }}/ca_cert_setup.sh"
+      args:
+        chdir: "{{ playbook_dir }}"
+      environment:
+        ca_cert_generation_revision: "{{ ca_cert_generation_revision }}"
+        ca_key_generation_revision: "{{ ca_key_generation_revision }}"
+        kafka_namespace: "{{ kafka_namespace }}"
+        kafka_cluster_name: "{{ kafka_cluster_name }}"
+
+    # - name: End playbook execution gracefully
+    #   ansible.builtin.meta: end_play
+    #   when: some_condition is not defined
+
+    - name: Install or upgrade Strimzi Kafka Operator
+      kubernetes.core.helm:
+        name: "{{ strimzi_helm_release }}"
+        chart_ref: "{{ strimzi_helm_repo }}/{{ strimzi_helm_chart }}"
+        release_namespace: "{{ kafka_namespace }}"
+        chart_version: "{{ strimzi_helm_chart_version }}"
+        values_files:
+          - kafka_operator_values_{{ strimzi_helm_chart_version }}.yaml
+          - kafka_operator_values_override.yaml
+        state: present

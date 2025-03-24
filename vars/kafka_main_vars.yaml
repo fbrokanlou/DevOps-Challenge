@@ -1,0 +1,4 @@
+---
+# Kafka General Variables
+kafka_namespace: kafka
+kafka_cluster_name: kafka

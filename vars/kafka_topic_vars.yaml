@@ -1,0 +1,37 @@
+---
+# Kafka Topic Variables
+# topics:
+kafka_topic_name: posts
+
+# Number of Partitions: Determines the parallelism of the topic.
+# - Parallel Processing: More partitions allow more consumers to read messages in parallel.
+# - High Availability (HA): Even if a broker goes down, other brokers still have copies.
+# - Fault Tolerance: Ensures data is not lost due to a single broker failure.
+# - Kafka Best Practice: Always have replication factor ≥ 2 to prevent data loss.
+# - Recommended for number partitions = max(Number of Consumers, Expected Throughput / Broker Capacity)
+kafka_topic_partitions: 6
+
+# Replication Factor: Defines the number of copies of each partition.
+# One replica acts as the leader (handling reads/writes), and the others are followers (standby for failover).
+# Set to number of brokers:
+# - High Availability (HA): Even if a broker goes down, other brokers still have copies.
+# - Fault Tolerance: Ensures data is not lost due to a single broker failure.
+# - Kafka Best Practice: Always have replication factor ≥ 2 to prevent data loss.
+# - Important: The replication factor cannot be greater than the number of brokers (3 in our case).
+kafka_topic_replicas: "{{ kafka_broker_replicas }}"
+
+
+
+# Message Retention Period: Defines how long Kafka retains messages in the topic.
+# Short-term storage: Suitable for real-time processing where old messages are not needed after a day.
+# Efficient Disk Usage: Avoids unnecessary storage accumulation.
+# Consumer Recovery: If a consumer goes down, it has up to 24 hours to catch up before messages are deleted.
+# 86400000 ms = 24 hours (1 day)
+kafka_topic_retention_ms: 86400000
+
+# Segment File Size: Controls the size of Kafka log segments.
+# Kafka splits partitions into segments (small log files) stored on disk. 1073741824 bytes = 1GB per segment file.
+# - Balanced Disk I/O: Larger segment files reduce metadata overhead but avoid excessive memory usage.
+# - Efficient Log Compaction: Helps with cleanup and avoids excessive file management.
+# - Kafka Default is 1GB: Best practice for most workloads.
+kafka_topic_segment_bytes: 1073741824

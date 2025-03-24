@@ -1,0 +1,26 @@
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: producer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: producer
+  template:
+    metadata:
+      labels:
+        app: producer
+    spec:
+      containers:
+        - name: producer
+          image: mydomain.local/devops-challenge/producer:latest
+          imagePullPolicy: Never
+          env:
+            - name: KAFKA_BROKER_URL
+              value: "kafka-kafka-bootstrap.kafka.svc:9092"
+            - name: KAFKA_TOPIC
+              value: "posts"

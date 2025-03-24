@@ -1,0 +1,29 @@
+---
+- name: Deploy Strimzi Kafka Cluster
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ansible_python_interpreter: "{{ lookup('env', 'VIRTUAL_ENV', default='/usr') }}/bin/python3"
+  vars_files:
+    - kafka_main_vars.yaml
+    - kafka_cluster_vars.yaml
+    - kafka_topic_vars.yaml
+
+  tasks:
+    - name: Apply Kafka topic resource
+      kubernetes.core.k8s:
+        state: present
+        definition: |
+          apiVersion: kafka.strimzi.io/v1beta2
+          kind: KafkaTopic
+          metadata:
+            name: "{{ kafka_topic_name }}"
+            namespace: "{{ kafka_namespace }}"
+            labels:
+              strimzi.io/cluster: {{ kafka_cluster_name }}
+          spec:
+            partitions: {{ kafka_topic_partitions }}
+            replicas: {{ kafka_topic_replicas }}
+            config:
+              retention.ms: {{ kafka_topic_retention_ms }}
+              segment.bytes: {{ kafka_topic_segment_bytes }}

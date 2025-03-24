@@ -1,0 +1,99 @@
+---
+- name: Deploy Strimzi Kafka Cluster
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ansible_python_interpreter: "{{ lookup('env', 'VIRTUAL_ENV', default='/usr') }}/bin/python3"
+  vars_files:
+    - kafka_main_vars.yaml
+    - kafka_cluster_vars.yaml
+
+  tasks:
+    - name: Apply Kafka resource
+      kubernetes.core.k8s:
+        state: present
+        definition: |
+          apiVersion: kafka.strimzi.io/v1beta2
+          kind: Kafka
+          metadata:
+            name: "{{ kafka_cluster_name }}"
+            namespace: "{{ kafka_namespace }}"
+          spec:
+            clusterCa:
+              generateCertificateAuthority: false
+            clientsCa:
+              generateCertificateAuthority: false
+            kafka:
+              version: "{{ kafka_version }}"
+              replicas: {{ kafka_broker_replicas }}
+              template:
+                pod:
+                  securityContext:
+                    fsGroup: {{ kafka_template_pod_security_id }}
+                    runAsGroup: {{ kafka_template_pod_security_id }}
+                    runAsNonRoot: true
+                    runAsUser: {{ kafka_template_pod_security_id }}
+                    seccompProfile:
+                      type: RuntimeDefault
+                kafkaContainer:
+                  securityContext:
+                    allowPrivilegeEscalation: false
+                    runAsUser: {{ kafka_template_pod_security_id }}
+                    runAsNonRoot: true
+                    runAsGroup: {{ kafka_template_pod_security_id }}
+                    seccompProfile:
+                      type: RuntimeDefault
+                    capabilities:
+                      drop:
+                        - ALL
+              resources:
+                requests:
+                  memory: 500Mi
+                  cpu: "250m"
+                limits:
+                  memory: 1Gi
+                  cpu: "1000m"
+              listeners:
+                - name: plain
+                  port: 9092
+                  type: internal
+                  tls: false
+                - name: internal
+                  port: 9093
+                  type: internal
+                  tls: true
+                  authentication:
+                    type: tls
+                - name: external
+                  port: 9094
+                  type: nodeport
+                  tls: false
+              rack:
+                topologyKey: kubernetes.io/hostname
+              config:
+                offsets.topic.replication.factor: {{ offsets_topic_replication_factor }}
+                transaction.state.log.replication.factor: {{ transaction_state_log_replication_factor }}
+                transaction.state.log.min.isr: {{ transaction_state_log_min_isr }}
+                default.replication.factor: {{ default_replication_factor }}
+                min.insync.replicas: {{ min_insync_replicas }}
+                inter.broker.protocol.version: "{{ inter_broker_protocol_version }}"
+              storage:
+                type: jbod
+                volumes:
+                - id: 0
+                  type: persistent-claim
+                  size: 2Gi
+                  deleteClaim: false
+            zookeeper:
+              replicas: {{ kafka_zookeeper_replicas }}
+              storage:
+                type: persistent-claim
+                size: 1Gi
+                deleteClaim: false
+              resources:
+                requests:
+                  memory: 250Mi
+                  cpu: "300m"
+                limits:
+                  memory: 1Gi
+                  cpu: "1000m"

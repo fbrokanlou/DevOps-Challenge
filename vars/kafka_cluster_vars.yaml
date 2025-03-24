@@ -1,0 +1,73 @@
+---
+# Kafka Cluster Variables
+kafka_version: "3.9.0"
+kafka_template_pod_security_id: 13000
+
+# Number of brokers is set to 3. Why 3 brokers?
+# High Availability (HA): If one broker fails, the system remains operational.
+# Balanced Load: Partitions are evenly distributed across brokers.
+# Optimal for Replication: With 3 brokers, a replication factor of 3 ensures each partition has one replica on each broker.
+# Minimum recommended Kafka production setup is 3.
+kafka_broker_replicas: 3
+
+
+# Fault Tolerance: ZooKeeper follows a quorum model (majority rule). With 3 nodes, the cluster can survive the failure of one node while maintaining availability.
+# Best Practice: Always use an odd number of nodes to prevent split-brain scenarios.
+kafka_zookeeper_replicas: 3
+
+
+# Replication for Consumer Offsets. What it does:
+# Defines the replication factor for Kafka’s internal _consumer_offsets topic, which tracks consumer progress.
+# Why replication factor of 3?
+# 1- Data Safety: Ensures consumer offsets are not lost if a broker fails.
+# 2- Failover Support: Even if one broker goes down, offset tracking remains consistent.
+# 3- Aligned with Broker Count: Since we have 3 brokers, using a replication factor of 3 ensures full redundancy.
+offsets_topic_replication_factor: 3
+
+
+# Replication for Transaction Logs:
+# Defines the replication factor for Kafka's transaction logs, used for transactional message processing.
+# Why replication factor of 3?
+# Data Durability: Prevents data loss in transactional messaging.
+# Failure Tolerance: Allows transactions to continue working even if one broker fails.
+# Matches Kafka Best Practices: Aligns with the number of brokers (3).
+transaction_state_log_replication_factor: 3
+
+
+
+# Minimum In-Sync Replicas for Transaction Logs
+# Defines the minimum number of in-sync replicas (ISR) required for transaction logs.
+# Why minimum ISR of 2?
+# - Stronger Consistency: Ensures that at least two brokers hold the latest transaction state before an acknowledgment is sent.
+# - Fault Tolerance: If one broker goes down, Kafka can still operate safely.
+# - Rule of thumb: transaction_state_log_min_isr should be less than the replication factor but high enough to prevent data loss.
+transaction_state_log_min_isr: 2
+
+
+# Default Replication Factor for New Topics:
+# Defines the default replication factor for newly created topics (if not explicitly set).
+# Why default of 3?
+# - Consistent HA Strategy: Ensures new topics always get three replicas for reliability.
+# - Matches the number of brokers to maintain even distribution.
+# Alternative: Set to 2 for lower storage use but at the cost of reduced availability.
+default_replication_factor: 3
+
+
+
+# Minimum Required In-Sync Replicas:
+# Defines the minimum number of replicas that must be in sync before allowing writes.
+# Why 2 in-sync replicas?
+# - Ensures Durability: Messages are only committed if at least 2 replicas have them.
+# - Prevents Data Loss: If a broker crashes, the message is still available.
+# - Works well with a replication factor of 3:
+#   - If one broker fails, Kafka still has 2 ISRs available.
+#   - If set to 3, writes would fail if even one broker goes down.
+# Trade-off:
+# - Higher min.insync.replicas = More Safety but lower Availability
+# - Lower min.insync.replicas = More Availability but risk of data loss
+min_insync_replicas: 2
+
+# Kafka Inter-Broker Communication Version:
+# - Defines the Kafka protocol version that brokers use to communicate with each other.
+# - Ensures compatibility between different Kafka versions when upgrading.
+inter_broker_protocol_version: "3.9"

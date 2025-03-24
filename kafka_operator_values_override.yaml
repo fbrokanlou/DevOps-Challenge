@@ -1,0 +1,27 @@
+replicas: 1
+
+# https://strimzi.io/docs/operators/0.45.0/deploying#assembly-security-providers-str
+extraEnvs:
+  - name: STRIMZI_POD_SECURITY_PROVIDER_CLASS
+    value: restricted
+
+podSecurityContext:
+  runAsUser: 1000001
+  fsGroup: 0
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+resources:
+  limits:
+    memory: 1500Mi
+    cpu: 1000m
+  requests:
+    memory: 500Mi
+    cpu: 200m

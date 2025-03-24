@@ -1,0 +1,16 @@
+---
+
+
+# Strimzi Kafka oprator Helm Chart Variables
+strimzi_helm_repo: strimzi
+strimzi_helm_repo_url: https://strimzi.io/charts/
+strimzi_helm_chart: strimzi-kafka-operator
+strimzi_helm_chart_version: 0.45.0
+strimzi_helm_release: strimzi-operator
+
+# CA Key and Certificate Variables
+# Annotation strimzi.io/ca-cert-generation="<ca_certificate_generation>" defines the generation of a new CA certificate.
+# Annotation strimzi.io/ca-key-generation="<ca_key_generation>" defines the generation of a new CA key.
+# Start from 0 (zero) as the incremental value (strimzi.io/ca-cert-generation=0) for your own CA certificate. Set a higher incremental value when you renew the certificates.
+ca_key_generation_revision: "0"
+ca_cert_generation_revision: "0"
